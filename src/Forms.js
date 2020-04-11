@@ -2,17 +2,13 @@ import React from 'react';
 
 
 const getCookie = (key) => {
-	const cookies = document.cookie.split('&');
+	const cookies = document.cookie.split(';');
 	for (let i = 0;i < cookies.length;++i) {
 		let cookie = cookies[i].split('=');
 		if (cookie[0] == key) {
 			return cookie[1];
 		}
 	}
-};
-
-const toParams = (obj) => {
-	return Object.keys(obj).map(key => key + '=' + obj[key]).join('&');
 };
 
 const Fields = {
@@ -39,12 +35,13 @@ class FormField extends React.Component {
 	}
 }
 
+const ExFormContext = React.createContext();
+
 class ExForm extends React.Component {
 	constructor(props) {
 		super();
 
-		console.log(getCookie('csrftoken'));
-		this.state = {fields: {}, method: 'GET'};
+		this.state = {fields: {}, method: 'GET', errors: []};
 	}
 
 	componentWillMount() {
@@ -59,16 +56,24 @@ class ExForm extends React.Component {
 		const submit_text = this.props.submit_text ? this.props.submit_text : 'Submit';
 		return (
 			<form className="form" action={this.props.submit_url} method={this.state.method}>
-			<h2> {this.props.title ? this.props.title:''}</h2>
+				<h2> {this.props.title ? this.props.title:''}</h2>
+				
+				{this.state.errors.length == 0 ?
+					'':<div className="form-errors">
+						{this.state.errors.map((field, key) => {
+							return <li key={key}>{field.field} - {field.message}</li>;
+						})}
+					</div>}
+
 			{Object.keys(this.state.fields).map(
-				(field, key)=> 
-					<FormField 
-						onChange={this.onFieldValueChange.bind(this)}
-						key={key}
-						name={field}
-						type={this.state.fields[field].type}
-				/>)}
-			<button className="primary" onClick={this.submit.bind(this)}>{submit_text}</button>
+					(field, key)=> 
+						<FormField 
+							onChange={this.onFieldValueChange.bind(this)}
+							key={key}
+							name={field}
+							type={this.state.fields[field].type}
+					/>)}
+				<button className="primary" onClick={this.submit.bind(this)}>{submit_text}</button>
 			</form>
 		);
 	}
@@ -77,6 +82,8 @@ class ExForm extends React.Component {
 
 	submit(e) {
 		e.preventDefault();
+		this.setState({errors: []});
+
 		let fields = {};
 
 		Object.keys(this.state.fields).forEach((name) => {
@@ -109,10 +116,10 @@ class ExForm extends React.Component {
 					return (
 						response.json()
 						.then(errors => {
-							console.log(errors);
-							Object.keys(errors).forEach(error => {
-								console.log(error, errors[error]);
+							const e = Object.keys(errors).map(field=> {
+								return {field: field, message: errors[field][0].message};
 							});
+							this.setState({errors: e});
 						})
 					);
 				}
