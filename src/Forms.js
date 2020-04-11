@@ -1,16 +1,5 @@
 import React from 'react';
 
-
-const getCookie = (key) => {
-	const cookies = document.cookie.split(';');
-	for (let i = 0;i < cookies.length;++i) {
-		let cookie = cookies[i].split('=');
-		if (cookie[0] == key) {
-			return cookie[1];
-		}
-	}
-};
-
 const Fields = {
 	CharField: (props) => {
 		return <input type="text" {...props} />
@@ -41,14 +30,14 @@ class ExForm extends React.Component {
 	constructor(props) {
 		super();
 
-		this.state = {fields: {}, method: 'GET', errors: []};
+		this.state = {fields: {}, csrftoken: null, method: 'GET', errors: []};
 	}
 
 	componentWillMount() {
 		fetch(this.props.form_url)
 			.then(response => response.json())
 			.then(form => {
-				this.setState({fields: form.fields, method: form.method});
+				this.setState({fields: form.fields, method: form.method, csrftoken: form.csrftoken});
 			});
 	}
 
@@ -96,8 +85,9 @@ class ExForm extends React.Component {
 				'Content-Type': 'application/json',
 				'Accept': 'application/json',
 				'Credentials': 'same-origin',
-				'X-CSRFToken': getCookie('csrftoken')
+				'X-CSRFToken': this.state.csrftoken
 			}
+			
 		};
 
 		let url = this.props.submit_to;
